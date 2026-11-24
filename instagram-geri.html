@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>MAZSTİL AI - Instagram bağlantısı</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 560px; margin: 10vh auto; padding: 0 16px; line-height: 1.5; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  textarea { width: 100%; min-height: 6rem; font: 0.85rem ui-monospace, monospace; box-sizing: border-box; }
+  button, a.dugme { display: inline-block; margin: 8px 8px 0 0; padding: 8px 14px; border: 1px solid #1a1a1a; background: #fff; color: #1a1a1a; border-radius: 6px; font: inherit; cursor: pointer; text-decoration: none; }
+  .gizli { display: none; }
+  .hata { color: #b00020; }
+  .not { color: #555; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<h1 id="baslik">MAZSTİL AI'ya aktarılıyor…</h1>
+<p id="mesaj">Instagram yanıtı bu bilgisayardaki MAZSTİL AI'ya gönderiliyor. Bu sayfa hiçbir veri saklamaz ve başka yere göndermez.</p>
+<div id="yedek">
+  <p>Otomatik geçiş olmazsa (MAZSTİL AI kapalıysa ya da farklı bir portta çalışıyorsa) aşağıdaki adresi kopyalayın ve <b>MAZSTİL panelinde Hesaplar → Instagram → "Yönlendirilen adresi yapıştır"</b> kutusuna yapıştırın.</p>
+  <textarea id="adres" readonly aria-label="Kopyalanacak adres"></textarea>
+  <button type="button" id="kopyala">Adresi kopyala</button>
+  <a class="dugme gizli" id="elle" href="#">Yeniden dene</a>
+  <p class="not" id="kopyalandi" role="status"></p>
+</div>
+<script>
+(function () {
+  "use strict";
+  var PORT = 8765; /* MAZSTİL AI varsayılan yerel portu */
+  var IZINLI = ["code", "state", "error", "error_description", "error_reason"];
+  var q = new URLSearchParams(window.location.search);
+  var baslik = document.getElementById("baslik"), mesaj = document.getElementById("mesaj");
+  var adresKutusu = document.getElementById("adres"), elle = document.getElementById("elle");
+
+  /* Kopyalanacak adres: yalnız beklenen parametreler, sonundaki "#_" olmadan. */
+  var temiz = new URLSearchParams();
+  IZINLI.forEach(function (k) { if (q.has(k)) temiz.set(k, q.get(k).replace(/#_$/, "")); });
+  var hedef = "http://127.0.0.1:" + PORT + "/api/instagram/geri?" + temiz.toString();
+  adresKutusu.value = window.location.origin + window.location.pathname + "?" + temiz.toString();
+
+  if (!temiz.has("code") && !temiz.has("error")) {
+    baslik.textContent = "Instagram yanıtı bulunamadı";
+    mesaj.textContent = "Bu sayfa Instagram'da onay verdikten sonra otomatik açılır. MAZSTİL panelinden 'Instagram ile Bağlan'a basarak yeniden başlayın.";
+    mesaj.className = "hata";
+    document.getElementById("yedek").className = "gizli";
+    return;
+  }
+  if (temiz.has("error")) {
+    baslik.textContent = "Instagram bağlantısı tamamlanmadı";
+    mesaj.textContent = "Instagram izin verilmediğini ya da bir hata olduğunu bildirdi; sonucu MAZSTİL AI'ya aktarıyoruz.";
+  }
+  elle.href = hedef;
+  elle.className = "dugme";
+  document.getElementById("kopyala").addEventListener("click", function () {
+    var nt = document.getElementById("kopyalandi");
+    adresKutusu.select();
+    var tamam = function () { nt.textContent = "Kopyalandı. MAZSTİL panelindeki kutuya yapıştırın."; };
+    var hata = function () { nt.textContent = "Otomatik kopyalanamadı; metni seçip Ctrl+C ile kopyalayın."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(adresKutusu.value).then(tamam, hata);
+    else { try { document.execCommand("copy") ? tamam() : hata(); } catch (e) { hata(); } }
+  });
+  setTimeout(function () { window.location.replace(hedef); }, 1200);
+})();
+</script>
+</body>
+</html>
